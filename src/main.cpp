@@ -25,22 +25,38 @@ int r_state =0;
 int y_state =0;
 int g_state =0;
 
+bool debug = false;
 
-
+void allToggle(){
+  uint8_t instr;
+  if(buttonPins[0][1] = LOW){instr = HIGH;}else{instr = LOW;}
+  int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
+  for (byte i = 0; i < buttonCount; i++){
+    digitalWrite(buttonPins[i][1], instr);
+    delay(6);
+    }
+}
 
 ESP8266WiFiMulti setupWifi(char* ssid, char* net_psk){
   /*    Inputs   : ssid + psk
         Returns  : hostAddress
         Requires : serial console (for debug) */
   ESP8266WiFiMulti wlan;
-  Serial.print("Adding ");
-  Serial.println(ssid);
+
+
+  if (debug){
+    Serial.print("Adding ");
+    Serial.println(ssid);
+    }
+
   wlan.addAP(ssid, net_psk);
 
   while (wlan.run() != WL_CONNECTED) {
-    delay(250);
-    Serial.print(".");
-  }
+    allToggle();
+    delay(500);
+    if (debug){ Serial.print("."); }
+    }
+
   Serial.println("");
   Serial.println("Connected to");
   Serial.println(WiFi.SSID());
@@ -49,20 +65,45 @@ ESP8266WiFiMulti setupWifi(char* ssid, char* net_psk){
   return wlan;
 }
 
+
+
+
 void setup() {
-  Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
   for (byte i = 0; i < buttonCount; i++){
     pinMode(buttonPins[i][0], INPUT);
     pinMode(buttonPins[i][1], OUTPUT);
     digitalWrite(buttonPins[i][1], LOW);
+    digitalWrite(buttonPins[i][1], HIGH);
+    digitalWrite(buttonPins[i][1], LOW);
   }
-  ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
-  if (MDNS.begin("esp8266")) { // Start the mDNS responder for esp8266.local
+  Serial.begin(9600);
+  if (debug){
+    while (!Serial) {
+      allToggle();
+      delay(50); // wait for serial port to connect. Needed for native USB port only
+    }
+  }
+  //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
+  ESP8266WiFiMulti wlan;
+  wlan.addAP("NeoBadger","huemonsterventshiny");
+  //wlan.addAP(ssid, net_psk);
+  while (wlan.run() != WL_CONNECTED) {
+    allToggle();
+    delay(500);
+    if (debug){ Serial.print("."); }
+    }
+
+  Serial.println("");
+  Serial.println("Connected to");
+  Serial.println(WiFi.SSID());
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  if (MDNS.begin("test-hostname")) { // Start the mDNS responder for esp8266.local
+    //MDNS.setInstanceName("test-hostname");
     Serial.println("mDNS responder started");
+    //MDNS.addService("_ftp", "_tcp", 80);
     }
   else {
     Serial.println("Error setting up MDNS responder!");
@@ -70,6 +111,7 @@ void setup() {
 }
 
 void allLed(uint8_t instr){
+  MDNS.update();
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
   for (byte i = 0; i < buttonCount; i++){
     digitalWrite(buttonPins[i][1], instr);
@@ -129,6 +171,8 @@ void gameBlink(){
 
 }
 int notifyGameLoop(int roundCounter, int randomInt){
+  Serial.print("Starting GAME round ");
+  Serial.println(roundCounter);
   r_state=digitalRead(r_in);
   y_state=digitalRead(y_in);
   g_state=digitalRead(g_in);
@@ -149,18 +193,7 @@ void notifyGame(){
   gameBlink();
 }
 
-void loop() {
-  r_state=digitalRead(r_in);
-  y_state=digitalRead(y_in);
-  g_state=digitalRead(g_in);
-
- if (runCounter == 0){
-    Serial.println("First run; testing notifications...");
-    runCounter++;
-    notifyLed(r_out,r_in);
-    notifyLed(y_out,y_in);
-    notifyLed(g_out,g_in);
- }
+void buttonTest(){
   if (r_state == 1 && g_state == 1)
   {
     Serial.println("Two button is pressed!!");
@@ -178,9 +211,9 @@ void loop() {
  if (r_state == 1)
   {
     Serial.println("Red button is pressed!!");
-    //digitalWrite(r_out, HIGH);
-    //delay(200);
-    blinkLed(r_out,50,25,3);
+    digitalWrite(r_out, HIGH);
+    delay(200);
+    //blinkLed(r_out,50,25,3);
   }
  if (r_state == 0)
    {
@@ -209,4 +242,21 @@ void loop() {
     digitalWrite(g_out, LOW);
     delay(200);
     }
+}
+
+void loop() {
+  MDNS.update();
+  r_state=digitalRead(r_in);
+  y_state=digitalRead(y_in);
+  g_state=digitalRead(g_in);
+  buttonTest();
+
+ if (runCounter == 0){
+    Serial.println("First run; testing notifications...");
+    runCounter++;
+    notifyLed(r_out,r_in);
+    notifyLed(y_out,y_in);
+    notifyLed(g_out,g_in);
+ }
+
 }
