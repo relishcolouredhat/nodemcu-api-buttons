@@ -40,36 +40,6 @@ void allToggle(){
     }
 }
 
-ESP8266WiFiMulti setupWifi(char* ssid, char* net_psk){
-  /*    Inputs   : ssid + psk
-        Returns  : hostAddress
-        Requires : serial console (for debug) */
-  ESP8266WiFiMulti wlan;
-
-
-  if (debug){
-    Serial.print("Adding ");
-    Serial.println(ssid);
-    }
-
-  wlan.addAP(ssid, net_psk);
-
-  while (wlan.run() != WL_CONNECTED) {
-    allToggle();
-    delay(500);
-    if (debug){ Serial.print("."); }
-    }
-
-  Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
-  Serial.println("Connected to");
-  Serial.println(WiFi.SSID());
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  return wlan;
-}
-
-
-
 
 void setup() {
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
@@ -87,6 +57,7 @@ void setup() {
       delay(50); // wait for serial port to connect. Needed for native USB port only
     }
   }
+  Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
   //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
   ESP8266WiFiMulti wlan;
   wlan.addAP("NeoBadger","huemonsterventshiny");
