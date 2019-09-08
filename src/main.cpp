@@ -99,10 +99,11 @@ void setup() {
   Serial.println(WiFi.SSID());
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
-  if (MDNS.begin("test-hostname")) { // Start the mDNS responder for esp8266.local
+  String mdnsHandle;
+  mdnsHandle = "test-hostname";
+  if (MDNS.begin(mdnsHandle)) { // Start the mDNS responder for esp8266.local
     //MDNS.setInstanceName("test-hostname");
-    Serial.println("mDNS responder started");
+    Serial.print(("mDNS responder started ("+String(mdnsHandle)+")"));
     //MDNS.addService("_ftp", "_tcp", 80);
     }
   else {
