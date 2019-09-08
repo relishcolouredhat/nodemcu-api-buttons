@@ -29,11 +29,14 @@ bool debug = false;
 
 void allToggle(){
   uint8_t instr;
-  if(buttonPins[0][1] = LOW){instr = HIGH;}else{instr = LOW;}
+  //if(buttonPins[0][1] = LOW){instr = HIGH;}else{instr = LOW;}
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
   for (byte i = 0; i < buttonCount; i++){
-    digitalWrite(buttonPins[i][1], instr);
-    delay(6);
+    digitalWrite(buttonPins[i][1], HIGH);
+    delay(30);
+    digitalWrite(buttonPins[i][1], LOW);
+    delay(30);
+    digitalWrite(buttonPins[i][1], HIGH);
     }
 }
 
