@@ -57,9 +57,15 @@ void setup() {
       delay(50); // wait for serial port to connect. Needed for native USB port only
     }
   }
+  Serial.println("************************************************************************");
   Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
   //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
   ESP8266WiFiMulti wlan;
+  Serial.println("");
+  Serial.println("Adding wlan: prettyflyforawifi...");
+  wlan.addAP("prettyflyforawifi","h3mpr0p3");
+  Serial.println("");
+  Serial.println("Adding wlan: NeoBadger...");
   wlan.addAP("NeoBadger","huemonsterventshiny");
   //wlan.addAP(ssid, net_psk);
   while (wlan.run() != WL_CONNECTED) {
