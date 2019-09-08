@@ -11,7 +11,7 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-
+String version = "0.1.0";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 
@@ -57,7 +57,7 @@ ESP8266WiFiMulti setupWifi(char* ssid, char* net_psk){
     if (debug){ Serial.print("."); }
     }
 
-  Serial.println("");
+  Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
   Serial.println("Connected to");
   Serial.println(WiFi.SSID());
   Serial.println("IP address: ");
