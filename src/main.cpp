@@ -11,9 +11,10 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.1.4";
+String version = "0.1.5";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
+ESP8266WiFiMulti wlan;
 
 int buttonPins[][2] = {{r_in,r_out},{y_in,y_out},{g_in,g_out}};
 
@@ -35,11 +36,10 @@ void allToggle(){
     digitalWrite(buttonPins[i][1], HIGH);
     delay(30);
     digitalWrite(buttonPins[i][1], LOW);
-    delay(30);
+    delay(200);
     digitalWrite(buttonPins[i][1], HIGH);
     }
 }
-ESP8266WiFiMulti wlan;
 
 void setup() {
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
@@ -153,7 +153,7 @@ void gameBlink(){
 
 }
 int notifyGameLoop(int roundCounter, int randomInt){
-  Serial.print("Starting GAME round ");
+  Serial.print("Round ");
   Serial.println(roundCounter);
   r_state=digitalRead(r_in);
   y_state=digitalRead(y_in);
@@ -164,13 +164,20 @@ int notifyGameLoop(int roundCounter, int randomInt){
   //notifyLedCustom(buttonPins[randomButton][1],buttonPins[randomButton][0],50+newRandomInt,25+randomInt,5);
   notifyLed(buttonPins[randomButton][1],buttonPins[randomButton][0]);
   if (r_state == 1 && y_state == 1){
+    Serial.println("***************************");
+    Serial.println("GAME EXIT COMMAND DETECTED!");
+    Serial.println("***************************");
     return 0;
   }
   notifyGameLoop(roundCounter,randomInt);
 }
 
 void notifyGame(){
+  /*  Calls 'notifyGameLoop' function, a simple (lame) 'whack-a-mole'
+      mode which could be useful as an LED test and demo mode.     */
+  String funcVer = "0.1.3";
   gameBlink();
+  Serial.print("Starting notifyGAME v "+funcVer);
   notifyGameLoop(1,0);
   gameBlink();
 }
