@@ -11,7 +11,7 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.1.2";
+String version = "0.1.4";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 
@@ -60,13 +60,13 @@ void setup() {
   Serial.println("************************************************************************");
   Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
   //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
-
+  Serial.setDebugOutput(true);
   Serial.println("");
   Serial.println("Adding wlan: prettyflyforawifi...");
   wlan.addAP("prettyflyforawifi","h3mpr0p3");
   Serial.println("");
-  //Serial.println("Adding wlan: NeoBadger...");
-  //wlan.addAP("NeoBadger","huemonsterventshiny");
+  Serial.println("Adding wlan: NeoBadger...");
+  wlan.addAP("NeoBadger","huemonsterventshiny");
   Serial.println("Trying to connect to wlan...");
 
   while (wlan.run() != WL_CONNECTED) {
@@ -227,13 +227,13 @@ void buttonTest(){
 }
 
 void loop() {
+  wlan.run();
+  //while (wlan.run() != WL_CONNECTED) {
+  //  Serial.println("Disconnected- retrying to connect to wlan...");
+  //  allToggle();
+  //  delay(500);
+  //  }
 
-  while (wlan.run() != WL_CONNECTED) {
-    Serial.println("Disconnected- retrying to connect to wlan...");
-    allToggle();
-    delay(500);
-    Serial.print(".");
-    }
   MDNS.update();
   r_state=digitalRead(r_in);
   y_state=digitalRead(y_in);
