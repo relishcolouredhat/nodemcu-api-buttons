@@ -103,7 +103,7 @@ void setup() {
   mdnsHandle = "test-hostname";
   if (MDNS.begin(mdnsHandle)) { // Start the mDNS responder for esp8266.local
     //MDNS.setInstanceName("test-hostname");
-    Serial.print(("mDNS responder started ("+String(mdnsHandle)+")"));
+    Serial.println(("mDNS responder started ("+String(mdnsHandle)+".local)"));
     //MDNS.addService("_ftp", "_tcp", 80);
     }
   else {
