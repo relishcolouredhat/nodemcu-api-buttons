@@ -2,6 +2,17 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include "espconn.h"
+#include "lwip/inet.h"
+//#include "lwip/dns.h"
+
+// SRC: https://tttapa.github.io/ESP8266/Chap15%20-%20NTP.html
+WiFiUDP UDP;                     // Create an instance of the WiFiUDP class to send and receive
+IPAddress timeServerIP;          // time.nist.gov NTP server address
+const char* NTPServerName = "pool.ntp.org";
+const int NTP_PACKET_SIZE = 48;  // NTP time stamp is in the first 48 bytes of the message
+byte NTPBuffer[NTP_PACKET_SIZE]; // buffer to hold incoming and outgoing packets
 
 // D2(gpio4)
 int r_in  = 4;
@@ -11,10 +22,13 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.1.5";
+String version = "0.2.2";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 ESP8266WiFiMulti wlan;
+IPAddress DNS_IP( 8,8,8,8 ); //then down in setup()
+
+IPAddress dns(8,8,8,8);
 
 int buttonPins[][2] = {{r_in,r_out},{y_in,y_out},{g_in,g_out}};
 
@@ -41,6 +55,51 @@ void allToggle(){
     }
 }
 
+uint32_t getTime() {
+  if (UDP.parsePacket() == 0) { // If there's no response (yet)
+    return 0;
+  }
+  UDP.read(NTPBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+  // Combine the 4 timestamp bytes into one 32-bit number
+  uint32_t NTPTime = (NTPBuffer[40] << 24) | (NTPBuffer[41] << 16) | (NTPBuffer[42] << 8) | NTPBuffer[43];
+  // Convert NTP time to a UNIX timestamp:
+  // Unix time starts on Jan 1 1970. That's 2208988800 seconds in NTP time:
+  const uint32_t seventyYears = 2208988800UL;
+  // subtract seventy years:
+  uint32_t UNIXTime = NTPTime - seventyYears;
+  return UNIXTime;
+}
+
+void sendNTPpacket(IPAddress& address) {
+  memset(NTPBuffer, 0, NTP_PACKET_SIZE);  // set all bytes in the buffer to 0
+  // Initialize values needed to form NTP request
+  NTPBuffer[0] = 0b11100011;   // LI, Version, Mode
+  // send a packet requesting a timestamp:
+  UDP.beginPacket(address, 123); // NTP requests are to port 123
+  UDP.write(NTPBuffer, NTP_PACKET_SIZE);
+  UDP.endPacket();
+}
+
+inline int getSeconds(uint32_t UNIXTime) {
+  return UNIXTime % 60;
+}
+
+inline int getMinutes(uint32_t UNIXTime) {
+  return UNIXTime / 60 % 60;
+}
+
+inline int getHours(uint32_t UNIXTime) {
+  return UNIXTime / 3600 % 24;
+}
+
+void startUDP() {
+  Serial.println("Starting UDP");
+  UDP.begin(123);                          // Start listening for UDP messages on port 123
+  Serial.print("Local port:\t");
+  Serial.println(UDP.localPort());
+  Serial.println();
+}
+
 void setup() {
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
   for (byte i = 0; i < buttonCount; i++){
@@ -60,26 +119,14 @@ void setup() {
   Serial.println("************************************************************************");
   Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
   //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
-  Serial.setDebugOutput(true);
   Serial.println("");
+  Serial.setDebugOutput(true);
   Serial.println("Adding wlan: prettyflyforawifi...");
   wlan.addAP("prettyflyforawifi","h3mpr0p3");
-  Serial.println("");
   Serial.println("Adding wlan: NeoBadger...");
   wlan.addAP("NeoBadger","huemonsterventshiny");
   Serial.println("Trying to connect to wlan...");
-
-  while (wlan.run() != WL_CONNECTED) {
-    allToggle();
-    delay(500);
-    Serial.print(".");
-    }
-
-  Serial.println("");
-  Serial.println("Connected to");
-  Serial.println(WiFi.SSID());
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  wlan.run();
   String mdnsHandle;
   mdnsHandle = "test-hostname";
   if (MDNS.begin(mdnsHandle)) { // Start the mDNS responder for esp8266.local
@@ -90,6 +137,32 @@ void setup() {
   else {
     Serial.println("Error setting up MDNS responder!");
     }
+
+  WiFi.dnsIP(0).printTo(Serial); //to make sure
+
+
+  espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
+  WiFi.dnsIP(0).printTo(Serial); //to make sure
+
+
+  Serial.println("");
+  wlan.run();
+  startUDP();
+  //delay(5000);
+  WiFi.hostByName(NTPServerName, timeServerIP);
+  // if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
+  //   Serial.println("DNS lookup failed. Rebooting.");
+  //   Serial.println("");
+  //   Serial.println("");
+  //   Serial.flush();
+  //   ESP.reset();
+  // }
+  timeServerIP = IPAddress(216,232,132,77);
+  Serial.print("Time server IP:\t");
+  Serial.println(timeServerIP);
+
+  Serial.println("\r\nSending NTP request ...");
+  sendNTPpacket(timeServerIP);
 }
 
 void allLed(uint8_t instr){
@@ -152,6 +225,7 @@ void gameBlink(){
     delay(1000);
 
 }
+
 int notifyGameLoop(int roundCounter, int randomInt){
   Serial.print("Round ");
   Serial.println(roundCounter);
@@ -233,7 +307,40 @@ void buttonTest(){
     }
 }
 
+unsigned long intervalNTP = 60000; // Request NTP time every minute
+unsigned long prevNTP = 0;
+unsigned long lastNTPResponse = millis();
+uint32_t timeUNIX = 0;
+
+unsigned long prevActualTime = 0;
+
 void loop() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - prevNTP > intervalNTP) { // If a minute has passed since last NTP request
+    prevNTP = currentMillis;
+    Serial.println("\r\nSending NTP request ...");
+    sendNTPpacket(timeServerIP);               // Send an NTP request
+  }
+
+  uint32_t time = getTime();                   // Check if an NTP response has arrived and get the (UNIX) time
+  if (time) {                                  // If a new timestamp has been received
+      timeUNIX = time;
+      Serial.print("NTP response:\t");
+      Serial.println(timeUNIX);
+      lastNTPResponse = currentMillis;
+    } else if ((currentMillis - lastNTPResponse) > 3600000) {
+        Serial.println("More than 1 hour since last NTP response. Rebooting.");
+        Serial.flush();
+        ESP.reset();
+      }
+
+  uint32_t actualTime = timeUNIX + (currentMillis - lastNTPResponse)/1000;
+  if (actualTime != prevActualTime && timeUNIX != 0) { // If a second has passed since last print
+      prevActualTime = actualTime;
+      uint32_t futureTime = actualTime + 600; // + incrementSeconds
+      Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   ", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
+      //Serial.printf("\rUTC time:\t2019-09-08T%d:%d:00-00:00   ", getHours(futureTime), getMinutes(futureTime));
+    }
   wlan.run();
   //while (wlan.run() != WL_CONNECTED) {
   //  Serial.println("Disconnected- retrying to connect to wlan...");
