@@ -22,7 +22,7 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.2.2";
+String version = "0.3.2";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 ESP8266WiFiMulti wlan;
@@ -256,6 +256,23 @@ void notifyGame(){
   gameBlink();
 }
 
+void printTakeoverTime(){
+  if (getTime() != 0 ){
+    //unsigned long currentMillis = millis();
+    //sendNTPpacket(timeServerIP);
+    //unsigned long lastNTPResponse = millis();
+    //unsigned long prevNTP = millis() - 120000; //(intervalNTP + 1);
+    //uint32_t timeUNIX = 0;
+    uint32_t actualTime = millis()/1000;
+    uint32_t futureTime = actualTime + 300; // + incrementSeconds
+    //Serial.println("");
+    //Serial.println("");
+    Serial.printf("\tTakover Time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   \t", getHours(futureTime), getMinutes(futureTime), getSeconds(futureTime));
+    //Serial.println("");
+    //Serial.println("");
+  } else {Serial.println("No NTP sync yet!");}
+}
+
 void buttonTest(){
   if (r_state == 1 && g_state == 1)
   {
@@ -297,6 +314,7 @@ void buttonTest(){
  if (g_state == 1)
   {
     Serial.println("Green button is pressed!!");
+    printTakeoverTime();
     digitalWrite(g_out, HIGH);
     delay(200);
   }
@@ -307,9 +325,12 @@ void buttonTest(){
     }
 }
 
+
+
 unsigned long intervalNTP = 60000; // Request NTP time every minute
-unsigned long prevNTP = 0;
+//unsigned long prevNTP = 0;
 unsigned long lastNTPResponse = millis();
+unsigned long prevNTP = millis() - 120000; //(intervalNTP + 1);
 uint32_t timeUNIX = 0;
 
 unsigned long prevActualTime = 0;
@@ -335,11 +356,11 @@ void loop() {
       }
 
   uint32_t actualTime = timeUNIX + (currentMillis - lastNTPResponse)/1000;
+  uint32_t futureTime = actualTime + 300; // + incrementSeconds
   if (actualTime != prevActualTime && timeUNIX != 0) { // If a second has passed since last print
       prevActualTime = actualTime;
-      uint32_t futureTime = actualTime + 600; // + incrementSeconds
-      Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   ", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
-      //Serial.printf("\rUTC time:\t2019-09-08T%d:%d:00-00:00   ", getHours(futureTime), getMinutes(futureTime));
+      Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   \t", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
+      //Serial.printf("Future time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   ", getHours(futureTime), getMinutes(futureTime), getSeconds(futureTime));
     }
   wlan.run();
   //while (wlan.run() != WL_CONNECTED) {
