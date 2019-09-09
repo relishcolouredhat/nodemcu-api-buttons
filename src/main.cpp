@@ -22,7 +22,7 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.3.12";
+String version = "0.3.13";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 ESP8266WiFiMulti wlan;
@@ -223,7 +223,8 @@ void setup() {
   //   Serial.flush();
   //   ESP.reset();
   // }
-  timeServerIP = IPAddress(216,232,132,77);
+  timeServerIP = IPAddress(205,206,70,2);
+  //timeServerIP = IPAddress(216,232,132,77);
   Serial.print("Time server IP:\t");
   Serial.println(timeServerIP);
 
