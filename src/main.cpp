@@ -9,8 +9,9 @@
 
 // SRC: https://tttapa.github.io/ESP8266/Chap15%20-%20NTP.html
 WiFiUDP UDP;                     // Create an instance of the WiFiUDP class to send and receive
-IPAddress timeServerIP;          // time.nist.gov NTP server address
-const char* NTPServerName = "pool.ntp.org";
+//IPAddress timeServerIP;          // time.nist.gov NTP server address
+IPAddress timeServerIP = IPAddress(216,232,132,77);
+const char* NTPServerName = "ca.pool.ntp.org";
 const int NTP_PACKET_SIZE = 48;  // NTP time stamp is in the first 48 bytes of the message
 byte NTPBuffer[NTP_PACKET_SIZE]; // buffer to hold incoming and outgoing packets
 
@@ -22,12 +23,11 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.3.13";
+String version = "0.4.3";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 ESP8266WiFiMulti wlan;
 IPAddress DNS_IP( 8,8,8,8 ); //then down in setup()
-
 IPAddress dns(8,8,8,8);
 
 int buttonPins[][2] = {{r_in,r_out},{y_in,y_out},{g_in,g_out}};
@@ -61,6 +61,7 @@ bool timeUnset = true;
 uint32_t getTime() {
   Serial.println("[DEBUG]Checking for NTP response");
   if (UDP.parsePacket() == 0) { // If there's no response (yet)
+    Serial.println("[DEBUG]No response, exiting getTime()");
     return 0;
   }
   UDP.read(NTPBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
@@ -85,7 +86,7 @@ uint32_t getTime() {
                 - Fills buffer with NTP Request
                 - Sends UDP packet to address:port  */
 void sendNTPpacket(IPAddress& address, int port = 123) {
-  Serial.println("Sending NTP Packet!");
+  Serial.println("Sending NTP Packet!------------------------------->>>");
   memset(NTPBuffer, 0, NTP_PACKET_SIZE);  // set all bytes in the buffer to 0
   // Initialize values needed to form NTP request
   NTPBuffer[0] = 0b11100011;   // LI, Version, Mode
@@ -95,8 +96,8 @@ void sendNTPpacket(IPAddress& address, int port = 123) {
   UDP.endPacket();
   }
 
-uint32_t blockingGetTime(IPAddress& timeServerIP) {
-  sendNTPpacket(timeServerIP);
+uint32_t blockingGetTime(IPAddress& ip) {
+  sendNTPpacket(ip);
   getTime();
 } // Blocking UDP time request which sleeps until time return by running sendNTPpacket() followed by getTime().
 
@@ -120,10 +121,14 @@ void startUDP() {
   Serial.println();
 }
 
+
+//IPAddress timeServerIP = IPAddress(216,232,132,77);
+
+
 unsigned long intervalNTP = 60000; // Request NTP time every minute
-//unsigned long prevNTP = 0;
-unsigned long lastNTPResponse = millis();
-unsigned long prevNTP = millis() - 120000; //(intervalNTP + 1);
+unsigned long prevNTP = 0;
+unsigned long lastNTPResponse = 0;
+//unsigned long prevNTP = millis() - 120000; //(intervalNTP + 1);
 uint32_t timeUNIX = 0;
 unsigned long prevActualTime = 0;
 
@@ -149,6 +154,10 @@ unsigned long prevActualTime = 0;
 uint32_t checkNTPtime(){
   uint32_t time = getTime();                   // Check if an NTP response has arrived and get the (UNIX) time
   if (time) {                                  // If a new timestamp has been received
+      Serial.println("");
+      Serial.println("");
+      Serial.println("");
+      Serial.println("<<<---------------------NTP response!!!!!!!!!!!!!!!!!");
       unsigned long currentMillis = millis();
       timeUNIX = time;
       Serial.print("NTP response:\t");
@@ -191,7 +200,7 @@ void setup() {
   Serial.println("Adding wlan: NeoBadger...");
   wlan.addAP("NeoBadger","huemonsterventshiny");
   Serial.println("Trying to connect to wlan...");
-  espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
+  //espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
   wlan.run();
   String mdnsHandle;
   mdnsHandle = "test-hostname";
@@ -207,33 +216,34 @@ void setup() {
   WiFi.dnsIP(0).printTo(Serial); //to make sure
 
 
-  espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
+  //espconn_dns_setserver(0, IPAddress(8,8,4,4)); //to set the primary DNS to 8.8.8.4
   WiFi.dnsIP(0).printTo(Serial); //to make sure
-
-
+  //timeServerIP = IPAddress(216,232,132,77);
+  //timeServerIP = IPAddress(158,69,125,231);
+//158.69.125.231
   Serial.println("");
   wlan.run();
   startUDP();
   //delay(5000);
-  WiFi.hostByName(NTPServerName, timeServerIP);
-  // if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
-  //   Serial.println("DNS lookup failed. Rebooting.");
-  //   Serial.println("");
-  //   Serial.println("");
-  //   Serial.flush();
-  //   ESP.reset();
-  // }
-  timeServerIP = IPAddress(205,206,70,2);
-  //timeServerIP = IPAddress(216,232,132,77);
+
+
   Serial.print("Time server IP:\t");
   Serial.println(timeServerIP);
 
-  Serial.println("\r\nSending NTP request ...");
+  Serial.println("\r\nSending NTP request");
   unsigned long currentMillis = millis();
   sendNTPpacket(timeServerIP);
   //replace with func checkNTPtime()
   timeUNIX = checkNTPtime();
   Serial.println("--------Setup Complete--------");
+  WiFi.hostByName(NTPServerName, timeServerIP);
+  //if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
+  //  Serial.println("DNS lookup failed. Rebooting.");
+  //  Serial.println("");
+  //  Serial.println("");
+  //  Serial.flush();
+  //  ESP.reset();
+  //}
 }
 
 void allLed(uint8_t instr){
@@ -397,11 +407,11 @@ void buttonTest(){
 }
 
 uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
-  if (currentMillis - prevNTP > intervalNTP) {  // If a minute has passed since last NTP request
+  if (currentMillis - prevNTP > interval) {  // If a minute has passed since last NTP request
+  //if(true){
     prevNTP = currentMillis;
     Serial.println("\r\nSending NTP request ...");
     sendNTPpacket(timeServerIP);               // Send an NTP request
-    timeUNIX = checkNTPtime();
   //uint32_t time = getTime();                   // Check if an NTP response has arrived and get the (UNIX) time
   //if (time) {                                  // If a new timestamp has been received
   //    timeUNIX = time;
@@ -412,12 +422,16 @@ uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
         Serial.println("More than 1 hour since last NTP response. Rebooting.");
         Serial.flush();
         ESP.reset();
-      }
+    } else {
+      Serial.println("[DEBUG] CurrentMillis - prevNTP <= interval");
+      Serial.printf("[DEBUG] %d - %d <= %d", currentMillis,prevNTP,interval);
+    }
+    Serial.println("[DEBUG] CurrentMillis , prevNTP , interval");
+    Serial.printf("[DEBUG] %d , %d , %d", currentMillis,prevNTP,interval);
+    timeUNIX = checkNTPtime();
 }
 
-void loop() {
-  unsigned long currentMillis = millis();       // get uptime since loop start
-  checkNTPsync(currentMillis); // sets timeUNIX
+void writeTimeLoop(unsigned long currentMillis){
   uint32_t actualTime = timeUNIX + (currentMillis - lastNTPResponse)/1000;
   //uint32_t futureTime = actualTime + 300; // + incrementSeconds
   if (actualTime != prevActualTime && timeUNIX != 0) { // If a second has passed since last print
@@ -425,20 +439,37 @@ void loop() {
       Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   \t", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
       //Serial.printf("Future time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   ", getHours(futureTime), getMinutes(futureTime), getSeconds(futureTime));
     }
+}
+
+void readButtons(){
+  r_state=digitalRead(r_in);
+  y_state=digitalRead(y_in);
+  g_state=digitalRead(g_in);
+}
+
+void loop() {
+  unsigned long currentMillis = millis();       // get uptime in ms
+  //Serial.println("[DEBUG]Trying DNS");
+  //WiFi.hostByName(NTPServerName, timeServerIP);
+  Serial.println("[DEBUG]Trying wlan");
   wlan.run();
+  Serial.println("[DEBUG]Trying mDNS");
+  MDNS.update();
+  Serial.println("[DEBUG]Trying NTPsync");
+  checkNTPsync(currentMillis);                  // sets timeUNIX
+  Serial.println("[DEBUG]Trying writeTime");
+  writeTimeLoop(currentMillis);                 // writes time to serial if > 1 second has passed
+                                                //also reboots if > 1 hr since last update
   //while (wlan.run() != WL_CONNECTED) {
   //  Serial.println("Disconnected- retrying to connect to wlan...");
   //  allToggle();
   //  delay(500);
   //  }
-
-  MDNS.update();
-  r_state=digitalRead(r_in);
-  y_state=digitalRead(y_in);
-  g_state=digitalRead(g_in);
+  readButtons();
   buttonTest();
 
  if (runCounter == 0){
+    checkNTPsync(intervalNTP+1);
     Serial.println("First run; testing notifications...");
     runCounter++;
     notifyLed(r_out,r_in);
