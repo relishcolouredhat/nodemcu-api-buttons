@@ -59,9 +59,9 @@ void allToggle(){
 bool timeUnset = true;
 
 uint32_t getTime() {
-  Serial.println("[DEBUG]Checking for NTP response");
+  //Serial.println("[DEBUG]Checking for NTP response");
   if (UDP.parsePacket() == 0) { // If there's no response (yet)
-    Serial.println("[DEBUG]No response, exiting getTime()");
+    //Serial.println("[DEBUG]No response, exiting getTime()");
     return 0;
   }
   UDP.read(NTPBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
@@ -165,8 +165,8 @@ uint32_t checkNTPtime(){
       lastNTPResponse = currentMillis;
       return timeUNIX;
     } else {
-      Serial.println("No NTP response found after checking!");
-      return 0;
+      //Serial.println("No NTP response found after checking!");
+      //return 0;
     }
   }
 
@@ -236,7 +236,7 @@ void setup() {
   //replace with func checkNTPtime()
   timeUNIX = checkNTPtime();
   Serial.println("--------Setup Complete--------");
-  WiFi.hostByName(NTPServerName, timeServerIP);
+  //WiFi.hostByName(NTPServerName, timeServerIP);
   //if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
   //  Serial.println("DNS lookup failed. Rebooting.");
   //  Serial.println("");
@@ -338,7 +338,7 @@ void notifyGame(){
 }
 
 void printTakeoverTime(){
-  if (timeUNIX != 0 ){
+  if (!timeUnset){
     uint32_t currentTime = blockingGetTime(timeServerIP);
     //unsigned long currentMillis = millis();
     //sendNTPpacket(timeServerIP);
@@ -423,18 +423,18 @@ uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
         Serial.flush();
         ESP.reset();
     } else {
-      Serial.println("[DEBUG] CurrentMillis - prevNTP <= interval");
-      Serial.printf("[DEBUG] %d - %d <= %d", currentMillis,prevNTP,interval);
+      //Serial.println("[DEBUG] CurrentMillis - prevNTP <= interval");
+      //Serial.printf("[DEBUG] %d - %d <= %d", currentMillis,prevNTP,interval);
     }
-    Serial.println("[DEBUG] CurrentMillis , prevNTP , interval");
-    Serial.printf("[DEBUG] %d , %d , %d", currentMillis,prevNTP,interval);
+    //Serial.println("[DEBUG] CurrentMillis , prevNTP , interval");
+    //Serial.printf("[DEBUG] %d , %d , %d", currentMillis,prevNTP,interval);
     timeUNIX = checkNTPtime();
 }
 
 void writeTimeLoop(unsigned long currentMillis){
   uint32_t actualTime = timeUNIX + (currentMillis - lastNTPResponse)/1000;
   //uint32_t futureTime = actualTime + 300; // + incrementSeconds
-  if (actualTime != prevActualTime && timeUNIX != 0) { // If a second has passed since last print
+  if (actualTime != prevActualTime ){//&& timeUNIX != 0) { // If a second has passed since last print
       prevActualTime = actualTime;
       Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   \t", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
       //Serial.printf("Future time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   ", getHours(futureTime), getMinutes(futureTime), getSeconds(futureTime));
@@ -451,13 +451,13 @@ void loop() {
   unsigned long currentMillis = millis();       // get uptime in ms
   //Serial.println("[DEBUG]Trying DNS");
   //WiFi.hostByName(NTPServerName, timeServerIP);
-  Serial.println("[DEBUG]Trying wlan");
+  //Serial.println("[DEBUG]Trying wlan");
   wlan.run();
-  Serial.println("[DEBUG]Trying mDNS");
+  //Serial.println("[DEBUG]Trying mDNS");
   MDNS.update();
-  Serial.println("[DEBUG]Trying NTPsync");
+  //Serial.println("[DEBUG]Trying NTPsync");
   checkNTPsync(currentMillis);                  // sets timeUNIX
-  Serial.println("[DEBUG]Trying writeTime");
+  //Serial.println("[DEBUG]Trying writeTime");
   writeTimeLoop(currentMillis);                 // writes time to serial if > 1 second has passed
                                                 //also reboots if > 1 hr since last update
   //while (wlan.run() != WL_CONNECTED) {
