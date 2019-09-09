@@ -22,7 +22,7 @@ int y_out = 2;
 int g_in  = 16;
 int g_out = 14;
 int runCounter = 0;
-String version = "0.3.7";
+String version = "0.3.12";
 //int inputPins = {r_in,y_in,g_in}
 //int outputPins = {r_out,y_out,g_out}
 ESP8266WiFiMulti wlan;
@@ -59,6 +59,7 @@ void allToggle(){
 bool timeUnset = true;
 
 uint32_t getTime() {
+  Serial.println("[DEBUG]Checking for NTP response");
   if (UDP.parsePacket() == 0) { // If there's no response (yet)
     return 0;
   }
@@ -151,7 +152,7 @@ uint32_t checkNTPtime(){
       unsigned long currentMillis = millis();
       timeUNIX = time;
       Serial.print("NTP response:\t");
-      Serial.println(timeUNIX);
+      Serial.print(timeUNIX);
       lastNTPResponse = currentMillis;
       return timeUNIX;
     } else {
@@ -231,6 +232,7 @@ void setup() {
   sendNTPpacket(timeServerIP);
   //replace with func checkNTPtime()
   timeUNIX = checkNTPtime();
+  Serial.println("--------Setup Complete--------");
 }
 
 void allLed(uint8_t instr){
@@ -398,7 +400,7 @@ uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
     prevNTP = currentMillis;
     Serial.println("\r\nSending NTP request ...");
     sendNTPpacket(timeServerIP);               // Send an NTP request
-    return checkNTPtime();
+    timeUNIX = checkNTPtime();
   //uint32_t time = getTime();                   // Check if an NTP response has arrived and get the (UNIX) time
   //if (time) {                                  // If a new timestamp has been received
   //    timeUNIX = time;
@@ -414,9 +416,9 @@ uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
 
 void loop() {
   unsigned long currentMillis = millis();       // get uptime since loop start
-  timeUNIX = checkNTPsync(currentMillis);
+  checkNTPsync(currentMillis); // sets timeUNIX
   uint32_t actualTime = timeUNIX + (currentMillis - lastNTPResponse)/1000;
-  uint32_t futureTime = actualTime + 300; // + incrementSeconds
+  //uint32_t futureTime = actualTime + 300; // + incrementSeconds
   if (actualTime != prevActualTime && timeUNIX != 0) { // If a second has passed since last print
       prevActualTime = actualTime;
       Serial.printf("\rUTC time:\t2019-09-08T%.2d:%.2d:%.2d-00:00   \t", getHours(actualTime), getMinutes(actualTime), getSeconds(actualTime));
