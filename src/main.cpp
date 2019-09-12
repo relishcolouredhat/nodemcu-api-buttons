@@ -170,82 +170,6 @@ uint32_t checkNTPtime(){
     }
   }
 
-
-
-
-void setup() {
-
-  int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
-  for (byte i = 0; i < buttonCount; i++){
-    pinMode(buttonPins[i][0], INPUT);
-    pinMode(buttonPins[i][1], OUTPUT);
-    digitalWrite(buttonPins[i][1], LOW);
-    digitalWrite(buttonPins[i][1], HIGH);
-    digitalWrite(buttonPins[i][1], LOW);
-  }
-  Serial.begin(9600);
-  if (debug){
-    while (!Serial) {
-      allToggle();
-      delay(50); // wait for serial port to connect. Needed for native USB port only
-    }
-  }
-  Serial.println("************************************************************************");
-  Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
-  //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
-  Serial.println("");
-  Serial.setDebugOutput(true);
-  Serial.println("Adding wlan: prettyflyforawifi...");
-  wlan.addAP("prettyflyforawifi","h3mpr0p3");
-  Serial.println("Adding wlan: NeoBadger...");
-  wlan.addAP("NeoBadger","huemonsterventshiny");
-  Serial.println("Trying to connect to wlan...");
-  //espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
-  wlan.run();
-  String mdnsHandle;
-  mdnsHandle = "test-hostname";
-  if (MDNS.begin(mdnsHandle)) { // Start the mDNS responder for esp8266.local
-    //MDNS.setInstanceName("test-hostname");
-    Serial.println(("mDNS responder started ("+String(mdnsHandle)+".local)"));
-    //MDNS.addService("_ftp", "_tcp", 80);
-    }
-  else {
-    Serial.println("Error setting up MDNS responder!");
-    }
-
-  WiFi.dnsIP(0).printTo(Serial); //to make sure
-
-
-  //espconn_dns_setserver(0, IPAddress(8,8,4,4)); //to set the primary DNS to 8.8.8.4
-  WiFi.dnsIP(0).printTo(Serial); //to make sure
-  //timeServerIP = IPAddress(216,232,132,77);
-  //timeServerIP = IPAddress(158,69,125,231);
-//158.69.125.231
-  Serial.println("");
-  wlan.run();
-  startUDP();
-  //delay(5000);
-
-
-  Serial.print("Time server IP:\t");
-  Serial.println(timeServerIP);
-
-  Serial.println("\r\nSending NTP request");
-  unsigned long currentMillis = millis();
-  sendNTPpacket(timeServerIP);
-  //replace with func checkNTPtime()
-  checkNTPtime();
-  Serial.println("--------Setup Complete--------");
-  //WiFi.hostByName(NTPServerName, timeServerIP);
-  //if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
-  //  Serial.println("DNS lookup failed. Rebooting.");
-  //  Serial.println("");
-  //  Serial.println("");
-  //  Serial.flush();
-  //  ESP.reset();
-  //}
-}
-
 void allLed(uint8_t instr){
   MDNS.update();
   int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
@@ -254,7 +178,6 @@ void allLed(uint8_t instr){
     delay(6);
     }
 }
-
 
 void blinkLed(int ledPin,int t_on,int t_off, int cycles){
   for (byte i =0; i < cycles; i++){
@@ -447,6 +370,91 @@ void readButtons(){
   g_state=digitalRead(g_in);
 }
 
+
+void setup() {
+
+  int buttonCount = sizeof(buttonPins) / sizeof(buttonPins[0]);
+  for (byte i = 0; i < buttonCount; i++){
+    pinMode(buttonPins[i][0], INPUT);
+    pinMode(buttonPins[i][1], OUTPUT);
+    digitalWrite(buttonPins[i][1], LOW);
+    digitalWrite(buttonPins[i][1], HIGH);
+    digitalWrite(buttonPins[i][1], LOW);
+  }
+  Serial.begin(9600);
+  if (debug){
+    while (!Serial) {
+      allToggle();
+      delay(50); // wait for serial port to connect. Needed for native USB port only
+    }
+  }
+  Serial.println("************************************************************************");
+  Serial.println("Starting buttonTester Arduino Project v "+version+" Kelsey Comstock 2019");
+  Serial.println("************************************************************************");
+  //ESP8266WiFiMulti wlan = setupWifi("NeoBadger","huemonsterventshiny");
+  Serial.println("");
+  Serial.setDebugOutput(true);
+  Serial.println("[INFO]Adding wlan: prettyflyforawifi...");
+  wlan.addAP("prettyflyforawifi","h3mpr0p3");
+  Serial.println("[INFO]Adding wlan: NeoBadger...");
+  wlan.addAP("NeoBadger","huemonsterventshiny");
+  Serial.println("[INFO]Trying to connect to wlan...");
+  //espconn_dns_setserver(0, DNS_IP); //to set the primary DNS to 8.8.8.4
+  wlan.run();
+  String mdnsHandle;
+  mdnsHandle = "test-hostname";
+  if (MDNS.begin(mdnsHandle)) { // Start the mDNS responder for esp8266.local
+    //MDNS.setInstanceName("test-hostname");
+    Serial.println(("[INFO]mDNS responder started ("+String(mdnsHandle)+".local)"));
+    //MDNS.addService("_ftp", "_tcp", 80);
+  }
+  else {
+    Serial.println("[ERR!]Error setting up MDNS responder!");
+  }
+
+  WiFi.dnsIP(0).printTo(Serial); //to make sure
+
+
+  //espconn_dns_setserver(0, IPAddress(8,8,4,4)); //to set the primary DNS to 8.8.8.4
+  WiFi.dnsIP(0).printTo(Serial); //to make sure
+  //timeServerIP = IPAddress(216,232,132,77);
+  //timeServerIP = IPAddress(158,69,125,231);
+  //158.69.125.231
+  Serial.println("");
+  wlan.run();
+  startUDP();
+  //delay(5000);
+
+
+  Serial.print("[INFO]Time server IP:\t");
+  Serial.println(timeServerIP);
+
+  Serial.println("[INFO]Sending NTP request");
+
+  unsigned long currentMillis = millis();
+
+  sendNTPpacket(timeServerIP);
+
+  Serial.println("[POST] Light and Switch Test");
+
+  notifyLed(r_out,r_in);
+  notifyLed(y_out,y_in);
+  notifyLed(g_out,g_in);
+
+  checkNTPtime();
+
+  Serial.println("--------Setup Complete--------");
+  //WiFi.hostByName(NTPServerName, timeServerIP);
+  //if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
+    //  Serial.println("DNS lookup failed. Rebooting.");
+    //  Serial.println("");
+    //  Serial.println("");
+    //  Serial.flush();
+    //  ESP.reset();
+    //}
+  }
+
+
 void loop() {
   unsigned long currentMillis = millis();       // get uptime in ms
   //Serial.println("[DEBUG]Trying DNS");
@@ -467,14 +475,14 @@ void loop() {
   //  }
   readButtons();
   buttonTest();
-
- if (runCounter == 0){
-    checkNTPsync(intervalNTP+1);
-    Serial.println("First run; testing notifications...");
-    runCounter++;
-    notifyLed(r_out,r_in);
-    notifyLed(y_out,y_in);
-    notifyLed(g_out,g_in);
- }
-
 }
+// if (runCounter == 0){
+//    checkNTPsync(intervalNTP+1);
+//    Serial.println("First run; testing notifications...");
+//    runCounter++;
+//    notifyLed(r_out,r_in);
+//    notifyLed(y_out,y_in);
+//    notifyLed(g_out,g_in);
+// }
+//
+//}
