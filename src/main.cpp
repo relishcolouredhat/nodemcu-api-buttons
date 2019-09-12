@@ -234,7 +234,7 @@ void setup() {
   unsigned long currentMillis = millis();
   sendNTPpacket(timeServerIP);
   //replace with func checkNTPtime()
-  timeUNIX = checkNTPtime();
+  checkNTPtime();
   Serial.println("--------Setup Complete--------");
   //WiFi.hostByName(NTPServerName, timeServerIP);
   //if(!WiFi.hostByName(NTPServerName, timeServerIP)) { // Get the IP address of the NTP server
