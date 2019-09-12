@@ -428,7 +428,7 @@ uint32_t checkNTPsync(unsigned long currentMillis, int interval = intervalNTP){
     }
     //Serial.println("[DEBUG] CurrentMillis , prevNTP , interval");
     //Serial.printf("[DEBUG] %d , %d , %d", currentMillis,prevNTP,interval);
-    timeUNIX = checkNTPtime();
+    checkNTPtime(); //this function sets the time - you don't need to put it in a var
 }
 
 void writeTimeLoop(unsigned long currentMillis){
